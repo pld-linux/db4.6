@@ -5,24 +5,28 @@
 %bcond_with	pmutex		# use POSIX mutexes (only process-private with linuxthreads)
 %bcond_without	nptl		# don't use process-shared POSIX mutexes (NPTL provides full interface)
 %bcond_without	static_libs	# don't build static libraries
-#
+
 %{?with_nptl:%define	with_pmutex	1}
+
 %ifnarch i586 i686 athlon pentium3 pentium4 %{x8664}
 %undefine with_java
 %endif
-%define	mver	4.6
+
+%define		mver		4.6
+%define		ver			%{mver}.21
+%define		patchlevel	4
 Summary:	Berkeley DB database library for C
 Summary(pl.UTF-8):	Biblioteka C do obsługi baz Berkeley DB
 Name:		db4.6
-Version:	%{mver}.21
-Release:	2
+Version:	%{ver}.%{patchlevel}
+Release:	1
 Epoch:		0
 License:	Sleepycat public license (GPL-like, see LICENSE)
 Group:		Libraries
 # alternative site (sometimes working): http://www.berkeleydb.com/
-Source0:	http://download.oracle.com/berkeley-db/db-%{version}.tar.gz
+Source0:	http://download.oracle.com/berkeley-db/db-%{ver}.tar.gz
 # Source0-md5:	718082e7e35fc48478a2334b0bc4cd11
-Patch0:		http://www.oracle.com/technology/products/berkeley-db/db/update/4.6.21/patch.4.6.21.1
+%patchset_source -f http://www.oracle.com/technology/products/berkeley-db/db/update/%{ver}/patch.%{ver}.%g 1 %{patchlevel}
 URL:		http://www.oracle.com/technology/products/berkeley-db/index.html
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -30,10 +34,11 @@ BuildRequires:	ed
 %{?with_java:BuildRequires:	jdk}
 BuildRequires:	libstdc++-devel
 BuildRequires:	libtool
+BuildRequires:	rpmbuild(macros) >= 1.426
 BuildRequires:	sed >= 4.0
 %{?with_tcl:BuildRequires:	tcl-devel >= 8.4.0}
-Provides:	db = %{version}-%{release}
 %{?with_rpm_robustness:Requires:	uname(release) >= 2.6.17}
+Provides:	db = %{version}-%{release}
 Obsoletes:	db4
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -215,9 +220,9 @@ Summary(pl.UTF-8):	Narzędzia do obsługi baz Berkeley DB z linii poleceń
 Group:		Applications/Databases
 Requires:	%{name} = %{epoch}:%{version}-%{release}
 Provides:	db-utils = %{version}-%{release}
+Obsoletes:	db3-utils
 Obsoletes:	db4-utils
 # obsolete Ra package
-Obsoletes:	db3-utils
 
 %description utils
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -242,10 +247,12 @@ Ten pakiet zawiera narzędzia do obsługi baz Berkeley DB z linii
 poleceń.
 
 %prep
-%setup -q -n db-%{version}
-%patch0 -p0
+%setup -q -n db-%{ver}
 
-%if !%{with nptl}
+# official patches
+%patchset_patch 1 %{patchlevel}
+
+%if %{without nptl}
 sed -i -e 's,AM_PTHREADS_SHARED("POSIX/.*,:,' dist/aclocal/mutex.ac
 %endif
 

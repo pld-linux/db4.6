@@ -1,20 +1,19 @@
 #
 # Conditional build:
-%bcond_without	java		# don't build java bindings
+%bcond_without	java		# don't build Java library
 %bcond_without	tcl		# don't build Tcl bindings
-%bcond_with	pmutex		# use POSIX mutexes (only process-private with linuxthreads)
+%bcond_with	pmutex		# use process-shared POSIX mutexes (not available with linuxthreads)
 %bcond_without	nptl		# don't use process-shared POSIX mutexes (NPTL provides full interface)
 %bcond_without	static_libs	# don't build static libraries
 
+%define		mver		4.6
+%define		ver		%{mver}.21
+%define		patchlevel	4
 %{?with_nptl:%define	with_pmutex	1}
-
 %ifnarch i586 i686 athlon pentium3 pentium4 %{x8664}
 %undefine with_java
 %endif
 
-%define		mver		4.6
-%define		ver			%{mver}.21
-%define		patchlevel	4
 Summary:	Berkeley DB database library for C
 Summary(pl.UTF-8):	Biblioteka C do obsługi baz Berkeley DB
 Name:		db4.6
@@ -23,21 +22,21 @@ Release:	1
 Epoch:		0
 License:	Sleepycat public license (GPL-like, see LICENSE)
 Group:		Libraries
-# alternative site (sometimes working): http://www.berkeleydb.com/
+#Source0Download: http://www.oracle.com/technetwork/database/berkeleydb/downloads/index-082944.html
 Source0:	http://download.oracle.com/berkeley-db/db-%{ver}.tar.gz
 # Source0-md5:	718082e7e35fc48478a2334b0bc4cd11
-%patchset_source -f http://www.oracle.com/technology/products/berkeley-db/db/update/%{ver}/patch.%{ver}.%g 1 %{patchlevel}
-URL:		http://www.oracle.com/technology/products/berkeley-db/index.html
-BuildRequires:	autoconf
+%patchset_source -f http://download.oracle.com/berkeley-db/patches/db/%{ver}/patch.%{ver}.%g 1 %{patchlevel}
+URL:		http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
+BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake
 BuildRequires:	ed
 %{?with_java:BuildRequires:	jdk}
 BuildRequires:	libstdc++-devel
-BuildRequires:	libtool
+BuildRequires:	libtool >= 2:2.2
 BuildRequires:	rpmbuild(macros) >= 1.426
 BuildRequires:	sed >= 4.0
 %{?with_tcl:BuildRequires:	tcl-devel >= 8.4.0}
-%{?with_rpm_robustness:Requires:	uname(release) >= 2.6.17}
+%{?with_nptl:Requires:	uname(release) >= 2.6.0}
 Provides:	db = %{version}-%{release}
 Obsoletes:	db4
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -222,7 +221,6 @@ Requires:	%{name} = %{epoch}:%{version}-%{release}
 Provides:	db-utils = %{version}-%{release}
 Obsoletes:	db3-utils
 Obsoletes:	db4-utils
-# obsolete Ra package
 
 %description utils
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -248,7 +246,6 @@ poleceń.
 
 %prep
 %setup -q -n db-%{ver}
-
 # official patches
 %patchset_patch 1 %{patchlevel}
 
@@ -256,11 +253,13 @@ poleceń.
 sed -i -e 's,AM_PTHREADS_SHARED("POSIX/.*,:,' dist/aclocal/mutex.ac
 %endif
 
+sed -i -e '/AC_PROG_LIBTOOL/aLT_OUTPUT' dist/configure.ac
+
 %build
 cd dist
-cp -f /usr/share/aclocal/libtool.m4 aclocal/libtool.ac
+cp -f /usr/share/aclocal/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 aclocal
 cp -f /usr/share/automake/config.sub .
-cp -f /usr/share/libtool/ltmain.sh .
+cp -f /usr/share/libtool/config/ltmain.sh .
 sh s_config
 cd ..
 
@@ -320,14 +319,14 @@ install -d $RPM_BUILD_ROOT%{_javadir}
 
 %if %{with static_libs}
 %{__make} -C build_unix.static library_install \
-	docdir=%{_docdir}/db-%{version}-docs \
-	DESTDIR=$RPM_BUILD_ROOT
+	DESTDIR=$RPM_BUILD_ROOT \
+	docdir=%{_docdir}/db-%{version}-docs
 %endif
 
 %{__make} -C build_unix library_install \
-	docdir=%{_docdir}/db-%{version}-docs \
 	DESTDIR=$RPM_BUILD_ROOT \
-	LIB_INSTALL_FILE_LIST=""
+	LIB_INSTALL_FILE_LIST="" \
+	docdir=%{_docdir}/db-%{version}-docs
 
 mv $RPM_BUILD_ROOT%{_libdir}/libdb-%{mver}.so $RPM_BUILD_ROOT/%{_lib}
 
@@ -339,6 +338,8 @@ ln -sf /%{_lib}/libdb-%{mver}.so libndbm.so
 ln -sf libdb-%{mver}.la libdb.la
 ln -sf libdb-%{mver}.la libdb4.la
 ln -sf libdb-%{mver}.la libndbm.la
+ln -sf libdb_cxx-%{mver}.so libdb_cxx.so
+ln -sf libdb_cxx-%{mver}.la libdb_cxx.la
 %if %{with java}
 ln -sf libdb_java-%{mver}.la libdb_java.la
 mv -f $RPM_BUILD_ROOT%{_libdir}/*.jar $RPM_BUILD_ROOT%{_javadir}
@@ -347,7 +348,6 @@ mv -f $RPM_BUILD_ROOT%{_libdir}/*.jar $RPM_BUILD_ROOT%{_javadir}
 ln -sf libdb_tcl-%{mver}.so libdb_tcl.so
 ln -sf libdb_tcl-%{mver}.la libdb_tcl.la
 %endif
-ln -sf libdb_cxx-%{mver}.la libdb_cxx.la
 %if %{with static_libs}
 mv -f libdb.a libdb-%{mver}.a
 ln -sf libdb-%{mver}.a libdb.a
@@ -356,7 +356,6 @@ ln -sf libdb-%{mver}.a libndbm.a
 mv -f libdb_cxx.a libdb_cxx-%{mver}.a
 ln -sf libdb_cxx-%{mver}.a libdb_cxx.a
 %endif
-ln -sf libdb_cxx-%{mver}.so libdb_cxx.so
 
 sed -i "s/old_library=''/old_library='libdb-%{mver}.a'/" libdb-%{mver}.la
 sed -i "s/old_library=''/old_library='libdb_cxx-%{mver}.a'/" libdb_cxx-%{mver}.la

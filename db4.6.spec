@@ -5,6 +5,7 @@
 %bcond_with	pmutex		# use process-shared POSIX mutexes (not available with linuxthreads)
 %bcond_without	nptl		# don't use process-shared POSIX mutexes (NPTL provides full interface)
 %bcond_without	static_libs	# don't build static libraries
+%bcond_with	default_db	# use this db as default system db
 
 %define		mver		4.6
 %define		ver		%{mver}.21
@@ -37,9 +38,15 @@ BuildRequires:	rpmbuild(macros) >= 1.426
 BuildRequires:	sed >= 4.0
 %{?with_tcl:BuildRequires:	tcl-devel >= 8.4.0}
 %{?with_nptl:Requires:	uname(release) >= 2.6.0}
+%if %{with default_db}
 Provides:	db = %{version}-%{release}
 Obsoletes:	db4
+%endif
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
+
+%if %{without default_db}
+%define		_includedir	%{_prefix}/include/db4.2
+%endif
 
 %description
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -58,10 +65,11 @@ Summary:	Header files for Berkeley database library
 Summary(pl.UTF-8):	Pliki nagłówkowe do biblioteki Berkeley Database
 Group:		Development/Libraries
 Requires:	%{name} = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-devel = %{version}-%{release}
 Obsoletes:	db3-devel
 Obsoletes:	db4-devel
-Obsoletes:	db4.5-devel
+%endif
 
 %description devel
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -90,9 +98,11 @@ Summary:	Static libraries for Berkeley database library
 Summary(pl.UTF-8):	Statyczne biblioteki Berkeley Database
 Group:		Development/Libraries
 Requires:	%{name}-devel = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-static = %{version}-%{release}
 Obsoletes:	db3-static
 Obsoletes:	db4-static
+%endif
 
 %description static
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -120,8 +130,10 @@ używających Berkeley DB.
 Summary:	Berkeley database library for C++
 Summary(pl.UTF-8):	Biblioteka baz danych Berkeley dla C++
 Group:		Libraries
+%if %{with default_db}
 Provides:	db-cxx = %{version}-%{release}
 Obsoletes:	db4-cxx
+%endif
 
 %description cxx
 Berkeley database library for C++.
@@ -135,7 +147,9 @@ Summary(pl.UTF-8):	Pliki nagłówkowe biblioteki db-cxx
 Group:		Development/Libraries
 Requires:	%{name}-cxx = %{epoch}:%{version}-%{release}
 Requires:	%{name}-devel = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-cxx-devel = %{version}-%{release}
+%endif
 Conflicts:	db-devel < 4.1.25-3
 
 %description cxx-devel
@@ -149,7 +163,9 @@ Summary:	Static version of db-cxx library
 Summary(pl.UTF-8):	Statyczna wersja biblioteki db-cxx
 Group:		Development/Libraries
 Requires:	%{name}-cxx-devel = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-cxx-static = %{version}-%{release}
+%endif
 Conflicts:	db-static < 4.2.50-1
 
 %description cxx-static
@@ -163,7 +179,9 @@ Summary:	Berkeley database library for Java
 Summary(pl.UTF-8):	Biblioteka baz danych Berkeley dla Javy
 Group:		Libraries
 Requires:	jpackage-utils
+%if %{with default_db}
 Provides:	db-java = %{version}-%{release}
+%endif
 
 %description java
 Berkeley database library for Java.
@@ -176,7 +194,9 @@ Summary:	Development files for db-java library
 Summary(pl.UTF-8):	Pliki programistyczne biblioteki db-java
 Group:		Development/Languages/Java
 Requires:	%{name}-java = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-java-devel = %{version}-%{release}
+%endif
 Conflicts:	db-devel < 4.1.25-3
 
 %description java-devel
@@ -190,8 +210,10 @@ Summary:	Berkeley database library for Tcl
 Summary(pl.UTF-8):	Biblioteka baz danych Berkeley dla Tcl
 Group:		Development/Languages/Tcl
 Requires:	tcl
+%if %{with default_db}
 Provides:	db-tcl = %{version}-%{release}
 Obsoletes:	db4-tcl
+%endif
 
 %description tcl
 Berkeley database library for Tcl.
@@ -204,7 +226,9 @@ Summary:	Development files for db-tcl library
 Summary(pl.UTF-8):	Pliki programistyczne biblioteki db-tcl
 Group:		Development/Languages/Tcl
 Requires:	%{name}-tcl = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-tcl-devel = %{version}-%{release}
+%endif
 Conflicts:	db-devel < 4.1.25-3
 
 %description tcl-devel
@@ -218,9 +242,11 @@ Summary:	Command line tools for managing Berkeley DB databases
 Summary(pl.UTF-8):	Narzędzia do obsługi baz Berkeley DB z linii poleceń
 Group:		Applications/Databases
 Requires:	%{name} = %{epoch}:%{version}-%{release}
+%if %{with default_db}
 Provides:	db-utils = %{version}-%{release}
 Obsoletes:	db3-utils
 Obsoletes:	db4-utils
+%endif
 
 %description utils
 The Berkeley Database (Berkeley DB) is a programmatic toolkit that
@@ -312,7 +338,7 @@ cd build_unix
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_includedir},%{_libdir},%{_bindir},/%{_lib}}
+install -d $RPM_BUILD_ROOT{%{_includedir},%{_libdir},%{_bindir}}
 %if %{with java}
 install -d $RPM_BUILD_ROOT%{_javadir}
 %endif
@@ -320,17 +346,30 @@ install -d $RPM_BUILD_ROOT%{_javadir}
 %if %{with static_libs}
 %{__make} -C build_unix.static library_install \
 	DESTDIR=$RPM_BUILD_ROOT \
-	docdir=%{_docdir}/db-%{version}-docs
+	docdir=%{_docdir}/db-%{version}-docs \
+	includedir=%{_includedir}
 %endif
 
 %{__make} -C build_unix library_install \
 	DESTDIR=$RPM_BUILD_ROOT \
 	LIB_INSTALL_FILE_LIST="" \
-	docdir=%{_docdir}/db-%{version}-docs
+	docdir=%{_docdir}/db-%{version}-docs \
+	includedir=%{_includedir}
 
+%if %{with default_db}
+install -d $RPM_BUILD_ROOT/%{_lib}
 mv $RPM_BUILD_ROOT%{_libdir}/libdb-%{mver}.so $RPM_BUILD_ROOT/%{_lib}
+%endif
 
 cd $RPM_BUILD_ROOT%{_libdir}
+%if %{with static_libs}
+mv -f libdb.a libdb-%{mver}.a
+mv -f libdb_cxx.a libdb_cxx-%{mver}.a
+%endif
+%if %{with java}
+mv -f $RPM_BUILD_ROOT%{_libdir}/*.jar $RPM_BUILD_ROOT%{_javadir}
+%endif
+%if %{with default_db}
 ln -sf /%{_lib}/libdb-%{mver}.so libdb.so
 ln -sf /%{_lib}/libdb-%{mver}.so libdb4.so
 ln -sf /%{_lib}/libdb-%{mver}.so libdb-%{mver}.so
@@ -342,19 +381,17 @@ ln -sf libdb_cxx-%{mver}.so libdb_cxx.so
 ln -sf libdb_cxx-%{mver}.la libdb_cxx.la
 %if %{with java}
 ln -sf libdb_java-%{mver}.la libdb_java.la
-mv -f $RPM_BUILD_ROOT%{_libdir}/*.jar $RPM_BUILD_ROOT%{_javadir}
 %endif
 %if %{with tcl}
 ln -sf libdb_tcl-%{mver}.so libdb_tcl.so
 ln -sf libdb_tcl-%{mver}.la libdb_tcl.la
 %endif
 %if %{with static_libs}
-mv -f libdb.a libdb-%{mver}.a
 ln -sf libdb-%{mver}.a libdb.a
 ln -sf libdb-%{mver}.a libdb4.a
 ln -sf libdb-%{mver}.a libndbm.a
-mv -f libdb_cxx.a libdb_cxx-%{mver}.a
 ln -sf libdb_cxx-%{mver}.a libdb_cxx.a
+%endif
 %endif
 
 sed -i "s/old_library=''/old_library='libdb-%{mver}.a'/" libdb-%{mver}.la
@@ -388,21 +425,29 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(644,root,root,755)
 %doc LICENSE README
+%if %{with default_db}
 %attr(755,root,root) /%{_lib}/libdb-%{mver}.so
+%else
+%attr(755,root,root) %{_libdir}/libdb-%{mver}.so
+%endif
 %dir %{_docdir}/db-%{version}-docs
 %{_docdir}/db-%{version}-docs/index.html
 %{_docdir}/db-%{version}-docs/license
 
 %files devel
 %defattr(644,root,root,755)
+%{_libdir}/libdb-%{mver}.la
+%if %{with default_db}
 %attr(755,root,root) %{_libdir}/libdb-%{mver}.so
 %attr(755,root,root) %{_libdir}/libdb4.so
 %attr(755,root,root) %{_libdir}/libdb.so
 %attr(755,root,root) %{_libdir}/libndbm.so
-%{_libdir}/libdb-%{mver}.la
 %{_libdir}/libdb4.la
 %{_libdir}/libdb.la
 %{_libdir}/libndbm.la
+%else
+%dir %{_includedir}
+%endif
 %{_includedir}/db.h
 %{_includedir}/db_185.h
 %{_docdir}/db-%{version}-docs/api_c
@@ -421,9 +466,11 @@ rm -rf $RPM_BUILD_ROOT
 %files static
 %defattr(644,root,root,755)
 %{_libdir}/libdb-%{mver}.a
+%if %{with default_db}
 %{_libdir}/libdb4.a
 %{_libdir}/libdb.a
 %{_libdir}/libndbm.a
+%endif
 %endif
 
 %files cxx
@@ -432,9 +479,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files cxx-devel
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_cxx.so
 %{_libdir}/libdb_cxx-%{mver}.la
+%if %{with default_db}
+%attr(755,root,root) %{_libdir}/libdb_cxx.so
 %{_libdir}/libdb_cxx.la
+%endif
 %{_includedir}/db_cxx.h
 %{_docdir}/db-%{version}-docs/api_cxx
 %{_docdir}/db-%{version}-docs/gsg/CXX
@@ -446,7 +495,9 @@ rm -rf $RPM_BUILD_ROOT
 %files cxx-static
 %defattr(644,root,root,755)
 %{_libdir}/libdb_cxx-%{mver}.a
+%if %{with default_db}
 %{_libdir}/libdb_cxx.a
+%endif
 %endif
 
 %if %{with java}
@@ -457,9 +508,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files java-devel
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_java.so
 %{_libdir}/libdb_java-%{mver}.la
+%if %{with default_db}
+%attr(755,root,root) %{_libdir}/libdb_java.so
 %{_libdir}/libdb_java.la
+%endif
 %{_docdir}/db-%{version}-docs/collections
 %{_docdir}/db-%{version}-docs/gsg/JAVA
 %{_docdir}/db-%{version}-docs/gsg_txn/JAVA
@@ -475,9 +528,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files tcl-devel
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_tcl.so
 %{_libdir}/libdb_tcl-%{mver}.la
+%if %{with default_db}
+%attr(755,root,root) %{_libdir}/libdb_tcl.so
 %{_libdir}/libdb_tcl.la
+%endif
 %{_docdir}/db-%{version}-docs/api_tcl
 %endif
 

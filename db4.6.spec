@@ -244,6 +244,7 @@ Group:		Applications/Databases
 Requires:	%{name} = %{epoch}:%{version}-%{release}
 %if %{with default_db}
 Provides:	db-utils = %{version}-%{release}
+Obsoletes:	db-utils
 Obsoletes:	db3-utils
 Obsoletes:	db4-utils
 %endif

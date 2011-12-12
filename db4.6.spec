@@ -7,8 +7,8 @@
 %bcond_without	static_libs	# don't build static libraries
 %bcond_with	default_db	# use this db as default system db
 
-%define		mver		4.6
-%define		ver		%{mver}.21
+%define		libver		4.6
+%define		ver		%{libver}.21
 %define		patchlevel	4
 %{?with_nptl:%define	with_pmutex	1}
 %ifnarch i586 i686 athlon pentium3 pentium4 %{x8664}
@@ -45,7 +45,7 @@ Obsoletes:	db4
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %if %{without default_db}
-%define		_includedir	%{_prefix}/include/db%{mver}
+%define		_includedir	%{_prefix}/include/db%{libver}
 %endif
 
 %description
@@ -358,45 +358,56 @@ install -d $RPM_BUILD_ROOT%{_javadir}
 
 %if %{with default_db}
 install -d $RPM_BUILD_ROOT/%{_lib}
-mv $RPM_BUILD_ROOT%{_libdir}/libdb-%{mver}.so $RPM_BUILD_ROOT/%{_lib}
+mv $RPM_BUILD_ROOT%{_libdir}/libdb-%{libver}.so $RPM_BUILD_ROOT/%{_lib}
 %endif
 
 cd $RPM_BUILD_ROOT%{_libdir}
 %if %{with static_libs}
-mv -f libdb.a libdb-%{mver}.a
-mv -f libdb_cxx.a libdb_cxx-%{mver}.a
+mv -f libdb.a libdb-%{libver}.a
+mv -f libdb_cxx.a libdb_cxx-%{libver}.a
 %endif
 %if %{with java}
-mv -f $RPM_BUILD_ROOT%{_libdir}/*.jar $RPM_BUILD_ROOT%{_javadir}
+mv -f $RPM_BUILD_ROOT%{_libdir}/db.jar $RPM_BUILD_ROOT%{_javadir}/db-%{libver}.jar
 %endif
 %if %{with default_db}
-ln -sf /%{_lib}/libdb-%{mver}.so libdb.so
-ln -sf /%{_lib}/libdb-%{mver}.so libdb4.so
-ln -sf /%{_lib}/libdb-%{mver}.so libdb-%{mver}.so
-ln -sf /%{_lib}/libdb-%{mver}.so libndbm.so
-ln -sf libdb-%{mver}.la libdb.la
-ln -sf libdb-%{mver}.la libdb4.la
-ln -sf libdb-%{mver}.la libndbm.la
-ln -sf libdb_cxx-%{mver}.so libdb_cxx.so
-ln -sf libdb_cxx-%{mver}.la libdb_cxx.la
+ln -sf /%{_lib}/libdb-%{libver}.so libdb.so
+ln -sf /%{_lib}/libdb-%{libver}.so libdb4.so
+ln -sf /%{_lib}/libdb-%{libver}.so libdb-%{libver}.so
+ln -sf /%{_lib}/libdb-%{libver}.so libndbm.so
+ln -sf libdb-%{libver}.la libdb.la
+ln -sf libdb-%{libver}.la libdb4.la
+ln -sf libdb-%{libver}.la libndbm.la
+ln -sf libdb_cxx-%{libver}.so libdb_cxx.so
+ln -sf libdb_cxx-%{libver}.la libdb_cxx.la
 %if %{with java}
-ln -sf libdb_java-%{mver}.la libdb_java.la
+ln -sf libdb_java-%{libver}.la libdb_java.la
+ln -sf db-%{libver}.jar $RPM_BUILD_ROOT%{_javadir}/db.jar
 %endif
 %if %{with tcl}
-ln -sf libdb_tcl-%{mver}.so libdb_tcl.so
-ln -sf libdb_tcl-%{mver}.la libdb_tcl.la
+ln -sf libdb_tcl-%{libver}.so libdb_tcl.so
+ln -sf libdb_tcl-%{libver}.la libdb_tcl.la
 %endif
 %if %{with static_libs}
-ln -sf libdb-%{mver}.a libdb.a
-ln -sf libdb-%{mver}.a libdb4.a
-ln -sf libdb-%{mver}.a libndbm.a
-ln -sf libdb_cxx-%{mver}.a libdb_cxx.a
+ln -sf libdb-%{libver}.a libdb.a
+ln -sf libdb-%{libver}.a libdb4.a
+ln -sf libdb-%{libver}.a libndbm.a
+ln -sf libdb_cxx-%{libver}.a libdb_cxx.a
 %endif
 %endif
 
-sed -i "s/old_library=''/old_library='libdb-%{mver}.a'/" libdb-%{mver}.la
-sed -i "s/old_library=''/old_library='libdb_cxx-%{mver}.a'/" libdb_cxx-%{mver}.la
+sed -i "s/old_library=''/old_library='libdb-%{libver}.a'/" libdb-%{libver}.la
+sed -i "s/old_library=''/old_library='libdb_cxx-%{libver}.a'/" libdb_cxx-%{libver}.la
 
+cd -
+
+cd $RPM_BUILD_ROOT%{_bindir}
+mv -f berkeley_db_svc berkeley_db_svc-%{libver}
+%{?with_default_db:ln -sf berkeley_db_svc-%{libver} berkeley_db_svc}
+for F in db_*; do
+  Fver=$(echo $F|sed 's/db_/db%{libver}_/')
+  mv $F $Fver
+  %{?with_default_db:ln -sf $Fver $F}
+done
 cd -
 rm -f examples_c*/tags
 install -d $RPM_BUILD_ROOT%{_examplesdir}/db-%{version}
@@ -426,9 +437,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(644,root,root,755)
 %doc LICENSE README
 %if %{with default_db}
-%attr(755,root,root) /%{_lib}/libdb-%{mver}.so
+%attr(755,root,root) /%{_lib}/libdb-%{libver}.so
 %else
-%attr(755,root,root) %{_libdir}/libdb-%{mver}.so
+%attr(755,root,root) %{_libdir}/libdb-%{libver}.so
 %endif
 %dir %{_docdir}/db-%{version}-docs
 %{_docdir}/db-%{version}-docs/index.html
@@ -436,9 +447,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(644,root,root,755)
-%{_libdir}/libdb-%{mver}.la
+%{_libdir}/libdb-%{libver}.la
 %if %{with default_db}
-%attr(755,root,root) %{_libdir}/libdb-%{mver}.so
+%attr(755,root,root) %{_libdir}/libdb-%{libver}.so
 %attr(755,root,root) %{_libdir}/libdb4.so
 %attr(755,root,root) %{_libdir}/libdb.so
 %attr(755,root,root) %{_libdir}/libndbm.so
@@ -465,7 +476,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with static_libs}
 %files static
 %defattr(644,root,root,755)
-%{_libdir}/libdb-%{mver}.a
+%{_libdir}/libdb-%{libver}.a
 %if %{with default_db}
 %{_libdir}/libdb4.a
 %{_libdir}/libdb.a
@@ -475,11 +486,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files cxx
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_cxx-%{mver}.so
+%attr(755,root,root) %{_libdir}/libdb_cxx-%{libver}.so
 
 %files cxx-devel
 %defattr(644,root,root,755)
-%{_libdir}/libdb_cxx-%{mver}.la
+%{_libdir}/libdb_cxx-%{libver}.la
 %if %{with default_db}
 %attr(755,root,root) %{_libdir}/libdb_cxx.so
 %{_libdir}/libdb_cxx.la
@@ -494,7 +505,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with static_libs}
 %files cxx-static
 %defattr(644,root,root,755)
-%{_libdir}/libdb_cxx-%{mver}.a
+%{_libdir}/libdb_cxx-%{libver}.a
 %if %{with default_db}
 %{_libdir}/libdb_cxx.a
 %endif
@@ -503,12 +514,15 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with java}
 %files java
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_java-%{mver}.so
+%attr(755,root,root) %{_libdir}/libdb_java-%{libver}.so
+%{_javadir}/db-%{libver}.jar
+%if %{with default_db}
 %{_javadir}/db.jar
+%endif
 
 %files java-devel
 %defattr(644,root,root,755)
-%{_libdir}/libdb_java-%{mver}.la
+%{_libdir}/libdb_java-%{libver}.la
 %if %{with default_db}
 %attr(755,root,root) %{_libdir}/libdb_java.so
 %{_libdir}/libdb_java.la
@@ -524,11 +538,11 @@ rm -rf $RPM_BUILD_ROOT
 %if %{with tcl}
 %files tcl
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libdb_tcl-%{mver}.so
+%attr(755,root,root) %{_libdir}/libdb_tcl-%{libver}.so
 
 %files tcl-devel
 %defattr(644,root,root,755)
-%{_libdir}/libdb_tcl-%{mver}.la
+%{_libdir}/libdb_tcl-%{libver}.la
 %if %{with default_db}
 %attr(755,root,root) %{_libdir}/libdb_tcl.so
 %{_libdir}/libdb_tcl.la
@@ -538,18 +552,34 @@ rm -rf $RPM_BUILD_ROOT
 
 %files utils
 %defattr(644,root,root,755)
+%attr(755,root,root) %{_bindir}/berkeley_db_svc-%{libver}
+%attr(755,root,root) %{_bindir}/db%{libver}_archive
+%attr(755,root,root) %{_bindir}/db%{libver}_checkpoint
+%attr(755,root,root) %{_bindir}/db%{libver}_codegen
+%attr(755,root,root) %{_bindir}/db%{libver}_deadlock
+%attr(755,root,root) %{_bindir}/db%{libver}_dump
+#%attr(755,root,root) %{_bindir}/db%{libver}_dump185
+%attr(755,root,root) %{_bindir}/db%{libver}_hotbackup
+%attr(755,root,root) %{_bindir}/db%{libver}_load
+%attr(755,root,root) %{_bindir}/db%{libver}_printlog
+%attr(755,root,root) %{_bindir}/db%{libver}_recover
+%attr(755,root,root) %{_bindir}/db%{libver}_stat
+%attr(755,root,root) %{_bindir}/db%{libver}_upgrade
+%attr(755,root,root) %{_bindir}/db%{libver}_verify
+%if %{with default_db}
 %attr(755,root,root) %{_bindir}/berkeley_db_svc
-%attr(755,root,root) %{_bindir}/db*_archive
-%attr(755,root,root) %{_bindir}/db*_checkpoint
-%attr(755,root,root) %{_bindir}/db*_codegen
-%attr(755,root,root) %{_bindir}/db*_deadlock
-%attr(755,root,root) %{_bindir}/db*_dump
-#%attr(755,root,root) %{_bindir}/db*_dump185
-%attr(755,root,root) %{_bindir}/db*_hotbackup
-%attr(755,root,root) %{_bindir}/db*_load
-%attr(755,root,root) %{_bindir}/db*_printlog
-%attr(755,root,root) %{_bindir}/db*_recover
-%attr(755,root,root) %{_bindir}/db*_stat
-%attr(755,root,root) %{_bindir}/db*_upgrade
-%attr(755,root,root) %{_bindir}/db*_verify
+%attr(755,root,root) %{_bindir}/db_archive
+%attr(755,root,root) %{_bindir}/db_checkpoint
+%attr(755,root,root) %{_bindir}/db_codegen
+%attr(755,root,root) %{_bindir}/db_deadlock
+%attr(755,root,root) %{_bindir}/db_dump
+#%attr(755,root,root) %{_bindir}/db_dump185
+%attr(755,root,root) %{_bindir}/db_hotbackup
+%attr(755,root,root) %{_bindir}/db_load
+%attr(755,root,root) %{_bindir}/db_printlog
+%attr(755,root,root) %{_bindir}/db_recover
+%attr(755,root,root) %{_bindir}/db_stat
+%attr(755,root,root) %{_bindir}/db_upgrade
+%attr(755,root,root) %{_bindir}/db_verify
+%endif
 %{_docdir}/db-%{version}-docs/utility

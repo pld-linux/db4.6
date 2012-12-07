@@ -26,6 +26,7 @@ Group:		Libraries
 #Source0Download: http://www.oracle.com/technetwork/database/berkeleydb/downloads/index-082944.html
 Source0:	http://download.oracle.com/berkeley-db/db-%{ver}.tar.gz
 # Source0-md5:	718082e7e35fc48478a2334b0bc4cd11
+Patch0:		openldap-format-security.patch
 %patchset_source -f http://download.oracle.com/berkeley-db/patches/db/%{ver}/patch.%{ver}.%g 1 %{patchlevel}
 URL:		http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
 BuildRequires:	autoconf >= 2.50
@@ -280,6 +281,7 @@ poleceń.
 
 %prep
 %setup -q -n db-%{ver}
+%patch0 -p1
 # official patches
 %patchset_patch 1 %{patchlevel}
 

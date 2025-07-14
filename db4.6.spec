@@ -280,7 +280,7 @@ poleceń.
 
 %prep
 %setup -q -n db-%{ver}
-%patch0 -p1
+%patch -P0 -p1
 # official patches
 %patchset_patch 1 %{patchlevel}
 
